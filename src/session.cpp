@@ -24,9 +24,7 @@ session::session(asio::io_service& io, proxy& parent_proxy)
     , opened_channels(2)
     , resolve_handler(boost::bind(&session::finished_resolving, this, placeholders::error(), _2, _3))
     , connect_timeout(parent_proxy.get_connect_timeout())
-    , resolve_timeout(parent_proxy.get_resolve_timeout())
-    , timeout_timer(io)
-    , resolveid()
+    , connect_timer(io)
 {
 }
 
@@ -103,34 +101,12 @@ void session::finished_receive_header(const error_code& ec, std::size_t bytes_tr
 void session::start_resolving(const char* peer)
 {
     TRACE() << peer << ":" << port;
-    resolveid = parent_proxy.get_resolver().async_resolve(peer, resolve_handler);
-    start_waiting_resolve_timer();
+    parent_proxy.get_resolver().async_resolve(peer, resolve_handler);
 }
 
-void session::start_waiting_resolve_timer()
-{
-    TRACE();
-    timeout_timer.expires_from_now(asio::deadline_timer::duration_type(0, 0, resolve_timeout.seconds()));
-    timeout_timer.async_wait(boost::bind(&session::finished_waiting_resolve_timer, this, placeholders::error));
-}
-
-void session::finished_waiting_resolve_timer(const error_code& ec)
+void session::finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end)
 {
     TRACE_ERROR(ec);
-    if (ec)
-        return;
-
-    if (parent_proxy.get_resolver().cancel(resolveid) == 0) {
-        finished_resolving(boost::system::errc::make_error_code(boost::system::errc::timed_out), 0, 0);
-    }
-}
-
-void session::finished_resolving(const error_code& ec, resolver::iterator begin, resolver::iterator end)
-{
-    TRACE_ERROR(ec);
-
-    timeout_timer.cancel();
-
     if (ec)
     {
         statistics::increment("resolve_failed");
@@ -146,8 +122,8 @@ void session::finished_resolving(const error_code& ec, resolver::iterator begin,
 void session::start_waiting_connect_timer()
 {
     TRACE();
-    timeout_timer.expires_from_now(asio::deadline_timer::duration_type(0, 0, connect_timeout.seconds()));
-    timeout_timer.async_wait(boost::bind(&session::finished_waiting_connect_timer, this, placeholders::error));
+    connect_timer.expires_from_now(asio::deadline_timer::duration_type(0, 0, connect_timeout.seconds()));
+    connect_timer.async_wait(boost::bind(&session::finished_waiting_connect_timer, this, placeholders::error));
 }
 
 void session::finished_waiting_connect_timer(const error_code& ec)
@@ -191,7 +167,7 @@ void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
 void session::finished_connecting_to_peer(const error_code& ec)
 {
     TRACE_ERROR(ec);
-    timeout_timer.cancel();
+    connect_timer.cancel();
     if (ec)
     {
         statistics::increment("connect_failed");
@@ -213,7 +189,7 @@ void session::finished_connecting_to_peer(const error_code& ec)
 void session::start_sending_header()
 {
     prepare_header();
-    process_headers();
+    filter_headers();
     responder.async_send(output_headers, boost::bind(&session::finished_sending_header, this, placeholders::error()));
 }
 
@@ -295,11 +271,16 @@ void session::prepare_header()
 
 lstring get_next_header(const lstring& headers, const lstring& current)
 {
+    if (*current.end == '\r' || *current.end == '\n')
+        return lstring();
     const char* header = std::find(current.end, headers.end, '\n');
-    return lstring(current.end, header + 1);
+    if (header == headers.end)
+        return lstring();
+    else
+        return lstring(current.end, header + 1);
 }
 
-void session::process_headers()
+void session::filter_headers()
 {
     const headers_type& allowed_headers = parent_proxy.get_allowed_headers();
     if (allowed_headers.empty())
@@ -309,36 +290,30 @@ void session::process_headers()
     }
 
     const lstring headers(asio::buffer_cast<const char*>(headers_tail), asio::buffer_cast<const char*>(headers_tail) + asio::buffer_size(headers_tail));
-
-    lstring header(headers.begin, headers.begin);
-
-    // The first line is request itself, it has to be passed as is
-    header = get_next_header(headers, header);
-    output_headers.push_back(asio::const_buffer(header.begin, header.size()));
-
-    // Request line is followed by headers, process header lines one-by-one till the first empty line
-    for (header = get_next_header(headers, header); !header.empty(); header = get_next_header(headers, header))
+    lstring allowed = get_next_header(headers, lstring(headers.begin, headers.begin));
+    if (!allowed)
     {
-        std::map<lstring, lstring>::const_iterator entry = allowed_headers.find(header);
-        if (entry != allowed_headers.end())
-        {
-            if (entry->second.empty())
-            {
-                // Just passthrough allowed header
-                output_headers.push_back(asio::const_buffer(header.begin, header.size()));
-            }
-            else
-            {
-                // Replace found header name with the new one...
-                output_headers.push_back(asio::const_buffer(entry->second.begin, entry->second.size()));
-                // ...and leave its value as-is.
-                output_headers.push_back(asio::const_buffer(header.begin + entry->first.size(), header.size() - entry->first.size()));
-            }
-        }
+        output_headers.push_back(headers_tail);
+        return;
     }
 
-    // Copy everything left beyond headers
-    output_headers.push_back(asio::const_buffer(header.begin, headers.end - header.begin));
+    for (;;)
+    {
+        const lstring& header = get_next_header(headers, allowed);
+        if (!header)
+            break;
+        if (allowed_headers.find(header) == allowed_headers.end())
+        {
+            if (allowed)
+                output_headers.push_back(asio::const_buffer(allowed.begin, allowed.size()));
+            allowed.begin = header.end;
+        }
+        allowed.end = header.end;
+    }
+    allowed.end = headers.end;
+
+    if (allowed)
+        output_headers.push_back(asio::const_buffer(allowed.begin, allowed.size()));
 }
 
 const channel& session::get_request_channel() const

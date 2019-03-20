@@ -1,3 +1,57 @@
+fastproxy (0.4.9) precise; urgency=low
+
+  * allow Origin header
+
+ -- Denis Puchkin <dpuchkin@yandex-team.ru>  Mon, 27 Jul 2015 20:06:24 +0300
+
+fastproxy (0.4.8) precise; urgency=low
+
+  * tocuh version
+
+ -- Denis Puchkin <dpuchkin@yandex-team.ru>  Tue, 31 Mar 2015 10:45:46 +0300
+
+fastproxy (0.4.7) precise; urgency=low
+
+  * new fastproxy config
+
+ -- Denis Puchkin <dpuchkin@yandex-team.ru>  Fri, 10 Oct 2014 12:44:46 +0400
+
+fastproxy (0.4.6) precise; urgency=low
+
+  * build fix
+
+ -- Denis Puchkin <dpuchkin@yandex-team.ru>  Wed, 24 Sep 2014 12:31:15 +0400
+
+fastproxy (0.4.5) precise; urgency=low
+
+  * new default config
+
+ -- Denis Puchkin <dpuchkin@yandex-team.ru>  Wed, 24 Sep 2014 12:24:46 +0400
+
+fastproxy (0.4.4) precise; urgency=low
+
+  * disable recursive dns
+
+ -- Denis Puchkin <dpuchkin@yandex-team.ru>  Wed, 10 Sep 2014 13:00:20 +0400
+
+fastproxy (0.4.3) precise; urgency=low
+
+  * test
+
+ -- Denis Puchkin <dpuchkin@yandex-team.ru>  Wed, 18 Jun 2014 18:05:35 +0400
+
+fastproxy (0.4.2) precise; urgency=low
+
+  * upstart: added kill timeout to speedup stopping
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Tue, 13 Nov 2012 01:33:20 +0400
+
+fastproxy (0.4.1) precise; urgency=low
+
+  * resolv and connect timeouts raised to 4 sec
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Thu, 08 Nov 2012 21:18:22 +0400
+
 fastproxy (0.4) precise; urgency=low
 
   * Zabbix script fix: handle fastproxy restarts
@@ -87,7 +141,7 @@ fastproxy (0.2.16) natty; urgency=low
 
 fastproxy (0.2.15) lucid; urgency=low
 
-  * allowed header X-Yandex-Antivirus 
+  * allowed header X-Yandex-Antivirus
 
  -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Mon, 27 Jun 2011 15:52:29 +0400
 
@@ -182,7 +236,7 @@ fastproxy (0.2.2) lucid; urgency=low
   * zbx_fastproxy.py: return 0 for non-existent statistics values (to avoid
     backtraces in zabbix-agent logs)
   * zbx_fastproxy.py: return 0 for non-existent statistics sockets
-  * zbx_fastproxy.py: aggregation support (only `sum' for now using `*') 
+  * zbx_fastproxy.py: aggregation support (only `sum' for now using `*')
 
  -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Thu, 24 Feb 2011 03:21:16 +0300
 
@@ -202,7 +256,7 @@ fastproxy (0.2ubuntu1) lucid; urgency=low
 
 fastproxy (0.1ubuntu1) lucid; urgency=low
 
-  * Fixed Ubuntu packaging scripts 
+  * Fixed Ubuntu packaging scripts
 
  -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Sat, 29 Jan 2011 21:12:25 +0300
 

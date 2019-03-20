@@ -33,7 +33,7 @@ public:
 
 private:
     void parse_config(int argc, char* argv[]);
-    void init_logging();
+    void init_logging(); 
     void init_resolver();
     void init_signals();
     void init_statistics();
