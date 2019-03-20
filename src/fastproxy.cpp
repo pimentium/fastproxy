@@ -188,7 +188,7 @@ void fastproxy::init_proxy()
 }
 
 void fastproxy::init_resolver()		
-{		
+{
     resolver::init();		
 }
 
