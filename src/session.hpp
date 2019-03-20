@@ -43,10 +43,7 @@ protected:
     void finished_receive_header(const error_code& ec, std::size_t bytes_transferred);
 
     void start_resolving(const char* peer);
-    void finished_resolving(const error_code& ec, resolver::iterator begin, resolver::iterator end);
-
-    void start_waiting_resolve_timer();
-    void finished_waiting_resolve_timer(const error_code& ec);
+    void finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end);
 
     void start_waiting_connect_timer();
     void finished_waiting_connect_timer(const error_code& ec);
@@ -69,7 +66,7 @@ protected:
 
     const char* parse_header(std::size_t size);
     void prepare_header();
-    void process_headers();
+    void filter_headers();
 
 private:
     friend class channel;
@@ -96,14 +93,12 @@ private:
     method_type method;
 
     int opened_channels;
-    boost::function<void (const error_code&, resolver::iterator, resolver::iterator)> resolve_handler;
+    boost::function<void (const error_code&, resolver::const_iterator, resolver::const_iterator)> resolve_handler;
     util::high_resolution_timer timer;
     error_code prev_ec;
     static logger log;
     const time_duration connect_timeout;
-    const time_duration resolve_timeout;
-    asio::deadline_timer timeout_timer;
-    int resolveid;
+    asio::deadline_timer connect_timer;
 };
 
 typedef boost::shared_ptr<session> session_ptr;
