@@ -189,7 +189,7 @@ void channel::finish(const error_code& ec)
 void channel::splice(int from, int to, long& spliced, error_code& ec)
 {
     statistics::increment("total_splices");
-    spliced = ::splice(from, 0, to, 0, PIPE_SIZE, SPLICE_F_NONBLOCK | SPLICE_F_MORE | MSG_NOSIGNAL);
+    spliced = ::splice(from, 0, to, 0, PIPE_SIZE, SPLICE_F_NONBLOCK | SPLICE_F_MORE);
     if (spliced == -1)
     {
         ec = asio::error::make_error_code(static_cast<asio::error::basic_errors>(errno));
